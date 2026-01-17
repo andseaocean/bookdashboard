@@ -384,7 +384,7 @@
         
         <div class="tabs">
             <button class="tab active" onclick="switchTab('stats')">📊 Статистика</button>
-            <button class="tab" onclick="switchTab('recent')">📖 Останні прочитані</button>
+            <button class="tab" onclick="switchTab('inProgress')">📖 В процесі</button>
             <button class="tab" onclick="switchTab('randomizer')">🎲 Рандомайзер</button>
             <button class="tab" onclick="switchTab('advisor')">💡 Порадник</button>
         </div>
@@ -415,10 +415,10 @@
             </div>
         </div>
 
-        <!-- Останні прочитані -->
-        <div id="recent" class="content-section">
-            <h2 style="color: #11998e; text-align: center; margin-bottom: 30px;">📖 Останні прочитані книги</h2>
-            <div id="recentReadBooks" class="books-grid"></div>
+        <!-- В процесі -->
+        <div id="inProgress" class="content-section">
+            <h2 style="color: #11998e; text-align: center; margin-bottom: 30px;">📖 Книги в процесі читання</h2>
+            <div id="inProgressBooks" class="books-grid"></div>
         </div>
 
         <!-- Рандомайзер -->
@@ -503,8 +503,8 @@
             
             if (tabName === 'stats') {
                 loadStatsData();
-            } else if (tabName === 'recent') {
-                loadRecentBooks();
+            } else if (tabName === 'inProgress') {
+                loadInProgressBooks();
             }
         }
 
@@ -636,12 +636,12 @@
             }
         }
 
-        // 2. ОСТАННІ ПРОЧИТАНІ
-        async function loadRecentBooks() {
-            const recentReadBooks = document.getElementById('recentReadBooks');
+        // 2. КНИГИ В ПРОЦЕСІ
+        async function loadInProgressBooks() {
+            const inProgressBooks = document.getElementById('inProgressBooks');
 
             try {
-                recentReadBooks.innerHTML = '<div class="loading">Завантаження...</div>';
+                inProgressBooks.innerHTML = '<div class="loading">Завантаження...</div>';
 
                 const response = await fetch(API_URL + '/tracking');
 
@@ -651,25 +651,22 @@
 
                 const data = await response.json();
 
-                // Останні 5 прочитаних книг
-                const booksWithReadDate = data.results
-                    .filter(book => getPropertyValue(book.properties['Прочитано']))
-                    .sort((a, b) => {
-                        const dateA = new Date(getPropertyValue(a.properties['Прочитано']));
-                        const dateB = new Date(getPropertyValue(b.properties['Прочитано']));
-                        return dateB - dateA;
-                    })
-                    .slice(0, 5);
+                // Книги зі статусом "В процесі"
+                const booksInProgress = data.results
+                    .filter(book => {
+                        const status = getPropertyValue(book.properties['Статус']);
+                        return status === 'В процесі';
+                    });
 
-                if (booksWithReadDate.length > 0) {
-                    recentReadBooks.innerHTML = booksWithReadDate.map(book => renderBookCard(book)).join('');
+                if (booksInProgress.length > 0) {
+                    inProgressBooks.innerHTML = booksInProgress.map(book => renderBookCard(book)).join('');
                 } else {
-                    recentReadBooks.innerHTML = '<div class="loading">Немає прочитаних книг</div>';
+                    inProgressBooks.innerHTML = '<div class="loading">Немає книг в процесі читання</div>';
                 }
 
             } catch (error) {
                 console.error('Помилка:', error);
-                recentReadBooks.innerHTML = '<div class="error">❌ Помилка завантаження даних</div>';
+                inProgressBooks.innerHTML = '<div class="error">❌ Помилка завантаження даних</div>';
             }
         }
 
