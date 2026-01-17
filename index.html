@@ -408,13 +408,15 @@
 
             <!-- Останні книги -->
             <h3 class="section-title">Останні книги</h3>
-            <div style="margin-bottom: 30px;">
-                <h4 class="subsection-title">Останні прочитані</h4>
-                <div id="lastReadBooks" class="books-grid"></div>
-            </div>
-            <div style="margin-bottom: 30px;">
-                <h4 class="subsection-title">Останні куплені</h4>
-                <div id="lastBoughtBooks" class="books-grid"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                <div>
+                    <h4 class="subsection-title">Останні прочитані</h4>
+                    <div id="lastReadBooks" class="books-grid"></div>
+                </div>
+                <div>
+                    <h4 class="subsection-title">Останні куплені</h4>
+                    <div id="lastBoughtBooks" class="books-grid"></div>
+                </div>
             </div>
 
             <!-- Книжковий баланс -->
@@ -490,7 +492,7 @@
 
     <script>
         // ВАЖЛИВО: Замініть це на URL вашого Cloudflare Worker!
-        const API_URL = 'https://bookdashboard.meereundozeane.workers.dev/';
+        const API_URL = 'https://bookdashboard.meereundozeane.workers.dev';
 
         // Перемикання вкладок
         function switchTab(tabName) {
