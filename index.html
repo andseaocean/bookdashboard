@@ -251,8 +251,8 @@
 
         .books-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
             margin-top: 20px;
         }
 
@@ -278,27 +278,27 @@
 
         .book-cover {
             width: 100%;
-            height: 350px;
+            height: 200px;
             object-fit: cover;
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         }
 
         .book-info {
-            padding: 20px;
+            padding: 15px;
         }
 
         .book-title {
-            font-size: 1.3em;
+            font-size: 1.1em;
             font-weight: bold;
             color: #11998e;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             line-height: 1.3;
         }
 
         .book-author {
             color: #666;
-            margin-bottom: 12px;
-            font-size: 1em;
+            margin-bottom: 8px;
+            font-size: 0.9em;
         }
 
         .book-meta {
@@ -408,15 +408,13 @@
 
             <!-- Останні книги -->
             <h3 class="section-title">Останні книги</h3>
-            <div class="books-grid" style="margin-bottom: 30px;">
-                <div>
-                    <h4 class="subsection-title">Остання прочитана</h4>
-                    <div id="lastReadBook"></div>
-                </div>
-                <div>
-                    <h4 class="subsection-title">Остання куплена</h4>
-                    <div id="lastBoughtBook"></div>
-                </div>
+            <div style="margin-bottom: 30px;">
+                <h4 class="subsection-title">Останні прочитані</h4>
+                <div id="lastReadBooks" class="books-grid"></div>
+            </div>
+            <div style="margin-bottom: 30px;">
+                <h4 class="subsection-title">Останні куплені</h4>
+                <div id="lastBoughtBooks" class="books-grid"></div>
             </div>
 
             <!-- Книжковий баланс -->
@@ -582,14 +580,14 @@
             const totalBooks = document.getElementById('totalBooks');
             const readBooks = document.getElementById('readBooks');
             const unreadBooks = document.getElementById('unreadBooks');
-            const lastReadBook = document.getElementById('lastReadBook');
-            const lastBoughtBook = document.getElementById('lastBoughtBook');
+            const lastReadBooks = document.getElementById('lastReadBooks');
+            const lastBoughtBooks = document.getElementById('lastBoughtBooks');
 
             try {
                 creditNumber.textContent = '...';
                 creditMessage.textContent = 'Завантаження даних...';
-                lastReadBook.innerHTML = '<div class="loading">Завантаження...</div>';
-                lastBoughtBook.innerHTML = '<div class="loading">Завантаження...</div>';
+                lastReadBooks.innerHTML = '<div class="loading">Завантаження...</div>';
+                lastBoughtBooks.innerHTML = '<div class="loading">Завантаження...</div>';
 
                 const response = await fetch(API_URL + '/tracking');
 
@@ -622,45 +620,51 @@
                     return boughtDate && new Date(boughtDate) > cutoffDate;
                 }).length;
 
-                const canBuy = Math.floor(booksReadAfterCutoff / 2) - booksBoughtAfterCutoff;
+                const balance = Math.floor(booksReadAfterCutoff / 2) - booksBoughtAfterCutoff;
 
-                if (canBuy < 0) {
-                    const debt = Math.abs(canBuy);
-                    const needToRead = debt * 2;
-                    creditNumber.textContent = debt;
-                    creditMessage.textContent = `Твій книжковий кредит — ${debt}. Тобі треба прочитати ще ${needToRead} ${needToRead === 1 ? 'книгу' : needToRead < 5 ? 'книги' : 'книжок'}.`;
+                // Відображення балансу
+                creditNumber.textContent = balance;
+                
+                if (balance < 0) {
+                    const debt = Math.abs(balance);
+                    const needToRead = debt * 2 + 2;
+                    creditMessage.textContent = `Ти у книжковому кредиті. Щоб купити нову книжку, тобі треба прочитати ще ${needToRead} ${needToRead === 1 ? 'книгу' : needToRead < 5 ? 'книги' : 'книжок'} із тих, які ти маєш.`;
+                } else if (balance === 0) {
+                    creditMessage.textContent = 'Твій баланс нульовий. Прочитай ще 2 книги, щоб купити нову! 📚';
                 } else {
-                    creditNumber.textContent = canBuy;
-                    creditMessage.textContent = `Ти можеш купити ${canBuy} ${canBuy === 1 ? 'книгу' : canBuy < 5 ? 'книги' : 'книжок'}! 🎉`;
+                    creditMessage.textContent = `Ти можеш купити ${balance} ${balance === 1 ? 'книгу' : balance < 5 ? 'книги' : 'книжок'}! 🎉`;
                 }
 
-                // Останні книги
+                // Останні 2 прочитані книги
                 const booksWithReadDate = data.results
                     .filter(book => getPropertyValue(book.properties['Прочитано']))
                     .sort((a, b) => {
                         const dateA = new Date(getPropertyValue(a.properties['Прочитано']));
                         const dateB = new Date(getPropertyValue(b.properties['Прочитано']));
                         return dateB - dateA;
-                    });
+                    })
+                    .slice(0, 2);
 
                 if (booksWithReadDate.length > 0) {
-                    lastReadBook.innerHTML = renderBookCard(booksWithReadDate[0]);
+                    lastReadBooks.innerHTML = booksWithReadDate.map(book => renderBookCard(book)).join('');
                 } else {
-                    lastReadBook.innerHTML = '<div class="loading">Немає прочитаних книг</div>';
+                    lastReadBooks.innerHTML = '<div class="loading">Немає прочитаних книг</div>';
                 }
 
+                // Останні 2 куплені книги
                 const booksWithBoughtDate = data.results
                     .filter(book => getPropertyValue(book.properties['Куплено']))
                     .sort((a, b) => {
                         const dateA = new Date(getPropertyValue(a.properties['Куплено']));
                         const dateB = new Date(getPropertyValue(b.properties['Куплено']));
                         return dateB - dateA;
-                    });
+                    })
+                    .slice(0, 2);
 
                 if (booksWithBoughtDate.length > 0) {
-                    lastBoughtBook.innerHTML = renderBookCard(booksWithBoughtDate[0]);
+                    lastBoughtBooks.innerHTML = booksWithBoughtDate.map(book => renderBookCard(book)).join('');
                 } else {
-                    lastBoughtBook.innerHTML = '<div class="loading">Немає куплених книг</div>';
+                    lastBoughtBooks.innerHTML = '<div class="loading">Немає куплених книг</div>';
                 }
 
             } catch (error) {
