@@ -383,13 +383,14 @@
         <h1>📚 Ласкаво просимо до Бібліотеки</h1>
         
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('tracking')">💳 Відстеження покупок</button>
+            <button class="tab active" onclick="switchTab('stats')">📊 Статистика</button>
+            <button class="tab" onclick="switchTab('recent')">📖 Останні прочитані</button>
             <button class="tab" onclick="switchTab('randomizer')">🎲 Рандомайзер</button>
             <button class="tab" onclick="switchTab('advisor')">💡 Порадник</button>
         </div>
 
-        <!-- Відстеження покупок -->
-        <div id="tracking" class="content-section active">
+        <!-- Статистика -->
+        <div id="stats" class="content-section active">
             <!-- Загальна статистика бібліотеки -->
             <div class="stats-grid" style="margin-bottom: 30px;">
                 <div class="stat-card">
@@ -406,25 +407,18 @@
                 </div>
             </div>
 
-            <!-- Останні книги -->
-            <h3 class="section-title">Останні книги</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-                <div>
-                    <h4 class="subsection-title">Останні прочитані</h4>
-                    <div id="lastReadBooks" class="books-grid"></div>
-                </div>
-                <div>
-                    <h4 class="subsection-title">Останні куплені</h4>
-                    <div id="lastBoughtBooks" class="books-grid"></div>
-                </div>
-            </div>
-
             <!-- Книжковий баланс -->
             <div class="credit-display">
                 <h2>Твій книжковий баланс</h2>
                 <div class="credit-number" id="creditNumber">-</div>
                 <div class="credit-message" id="creditMessage">Завантаження...</div>
             </div>
+        </div>
+
+        <!-- Останні прочитані -->
+        <div id="recent" class="content-section">
+            <h2 style="color: #11998e; text-align: center; margin-bottom: 30px;">📖 Останні прочитані книги</h2>
+            <div id="recentReadBooks" class="books-grid"></div>
         </div>
 
         <!-- Рандомайзер -->
@@ -507,8 +501,10 @@
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
             
-            if (tabName === 'tracking') {
-                loadTrackingData();
+            if (tabName === 'stats') {
+                loadStatsData();
+            } else if (tabName === 'recent') {
+                loadRecentBooks();
             }
         }
 
@@ -575,21 +571,17 @@
             `;
         }
 
-        // 1. ВІДСТЕЖЕННЯ ПОКУПОК
-        async function loadTrackingData() {
+        // 1. СТАТИСТИКА
+        async function loadStatsData() {
             const creditNumber = document.getElementById('creditNumber');
             const creditMessage = document.getElementById('creditMessage');
             const totalBooks = document.getElementById('totalBooks');
             const readBooks = document.getElementById('readBooks');
             const unreadBooks = document.getElementById('unreadBooks');
-            const lastReadBooks = document.getElementById('lastReadBooks');
-            const lastBoughtBooks = document.getElementById('lastBoughtBooks');
 
             try {
                 creditNumber.textContent = '...';
                 creditMessage.textContent = 'Завантаження даних...';
-                lastReadBooks.innerHTML = '<div class="loading">Завантаження...</div>';
-                lastBoughtBooks.innerHTML = '<div class="loading">Завантаження...</div>';
 
                 const response = await fetch(API_URL + '/tracking');
 
@@ -637,38 +629,6 @@
                     creditMessage.textContent = `Ти можеш купити ${balance} ${balance === 1 ? 'книгу' : balance < 5 ? 'книги' : 'книжок'}! 🎉`;
                 }
 
-                // Останні 2 прочитані книги
-                const booksWithReadDate = data.results
-                    .filter(book => getPropertyValue(book.properties['Прочитано']))
-                    .sort((a, b) => {
-                        const dateA = new Date(getPropertyValue(a.properties['Прочитано']));
-                        const dateB = new Date(getPropertyValue(b.properties['Прочитано']));
-                        return dateB - dateA;
-                    })
-                    .slice(0, 2);
-
-                if (booksWithReadDate.length > 0) {
-                    lastReadBooks.innerHTML = booksWithReadDate.map(book => renderBookCard(book)).join('');
-                } else {
-                    lastReadBooks.innerHTML = '<div class="loading">Немає прочитаних книг</div>';
-                }
-
-                // Останні 2 куплені книги
-                const booksWithBoughtDate = data.results
-                    .filter(book => getPropertyValue(book.properties['Куплено']))
-                    .sort((a, b) => {
-                        const dateA = new Date(getPropertyValue(a.properties['Куплено']));
-                        const dateB = new Date(getPropertyValue(b.properties['Куплено']));
-                        return dateB - dateA;
-                    })
-                    .slice(0, 2);
-
-                if (booksWithBoughtDate.length > 0) {
-                    lastBoughtBooks.innerHTML = booksWithBoughtDate.map(book => renderBookCard(book)).join('');
-                } else {
-                    lastBoughtBooks.innerHTML = '<div class="loading">Немає куплених книг</div>';
-                }
-
             } catch (error) {
                 console.error('Помилка:', error);
                 creditNumber.textContent = '❌';
@@ -676,7 +636,44 @@
             }
         }
 
-        // 2. РАНДОМАЙЗЕР
+        // 2. ОСТАННІ ПРОЧИТАНІ
+        async function loadRecentBooks() {
+            const recentReadBooks = document.getElementById('recentReadBooks');
+
+            try {
+                recentReadBooks.innerHTML = '<div class="loading">Завантаження...</div>';
+
+                const response = await fetch(API_URL + '/tracking');
+
+                if (!response.ok) {
+                    throw new Error('Помилка завантаження даних');
+                }
+
+                const data = await response.json();
+
+                // Останні 5 прочитаних книг
+                const booksWithReadDate = data.results
+                    .filter(book => getPropertyValue(book.properties['Прочитано']))
+                    .sort((a, b) => {
+                        const dateA = new Date(getPropertyValue(a.properties['Прочитано']));
+                        const dateB = new Date(getPropertyValue(b.properties['Прочитано']));
+                        return dateB - dateA;
+                    })
+                    .slice(0, 5);
+
+                if (booksWithReadDate.length > 0) {
+                    recentReadBooks.innerHTML = booksWithReadDate.map(book => renderBookCard(book)).join('');
+                } else {
+                    recentReadBooks.innerHTML = '<div class="loading">Немає прочитаних книг</div>';
+                }
+
+            } catch (error) {
+                console.error('Помилка:', error);
+                recentReadBooks.innerHTML = '<div class="error">❌ Помилка завантаження даних</div>';
+            }
+        }
+
+        // 3. РАНДОМАЙЗЕР
         async function getRandomBooks() {
             const button = document.getElementById('randomizeBtn');
             const resultDiv = document.getElementById('randomBookResult');
@@ -740,7 +737,7 @@
             }
         }
 
-        // 3. ПОРАДНИК
+        // 4. ПОРАДНИК
         async function getRecommendation() {
             const button = document.getElementById('advisorBtn');
             const resultDiv = document.getElementById('recommendationResult');
@@ -816,7 +813,7 @@
 
         // Завантажити дані при відкритті сторінки
         window.addEventListener('load', function() {
-            loadTrackingData();
+            loadStatsData();
         });
     </script>
 </body>
