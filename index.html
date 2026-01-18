@@ -486,7 +486,7 @@
 
     <script>
         // ВАЖЛИВО: Замініть це на URL вашого Cloudflare Worker!
-        const API_URL = 'https://bookdashboard.meereundozeane.workers.dev';
+        const API_URL = 'https://bookdashboard.meereundozeane.workers.dev/';
 
         // Перемикання вкладок
         function switchTab(tabName) {
@@ -621,10 +621,13 @@
                 
                 if (balance < 0) {
                     const debt = Math.abs(balance);
-                    const needToRead = debt * 2 + 2;
+                    const remainder = booksReadAfterCutoff % 2; // Залишок прочитаних книг
+                    const needToRead = debt * 2 + 2 - remainder;
                     creditMessage.textContent = `Ти у книжковому кредиті. Щоб купити нову книжку, тобі треба прочитати ще ${needToRead} ${needToRead === 1 ? 'книгу' : needToRead < 5 ? 'книги' : 'книжок'} із тих, які ти маєш.`;
                 } else if (balance === 0) {
-                    creditMessage.textContent = 'Твій баланс нульовий. Прочитай ще 2 книги, щоб купити нову! 📚';
+                    const remainder = booksReadAfterCutoff % 2; // Залишок прочитаних книг
+                    const needToRead = 2 - remainder;
+                    creditMessage.textContent = `Твій баланс нульовий. Прочитай ще ${needToRead} ${needToRead === 1 ? 'книгу' : 'книги'}, щоб купити нову! 📚`;
                 } else {
                     creditMessage.textContent = `Ти можеш купити ${balance} ${balance === 1 ? 'книгу' : balance < 5 ? 'книги' : 'книжок'}! 🎉`;
                 }
