@@ -391,7 +391,6 @@
         
         <div class="tabs">
             <button class="tab active" onclick="switchTab('stats')">📊 Статистика</button>
-            <button class="tab" onclick="switchTab('inProgress')">📖 В процесі</button>
             <button class="tab" onclick="switchTab('randomizer')">🎲 Рандомайзер</button>
             <button class="tab" onclick="switchTab('advisor')">💡 Порадник</button>
         </div>
@@ -420,12 +419,6 @@
                 <div class="credit-number" id="creditNumber">-</div>
                 <div class="credit-message" id="creditMessage">Завантаження...</div>
             </div>
-        </div>
-
-        <!-- В процесі -->
-        <div id="inProgress" class="content-section">
-            <h2 style="color: #11998e; text-align: center; margin-bottom: 30px;">📖 Книги в процесі читання</h2>
-            <div id="inProgressBooks" class="books-grid"></div>
         </div>
 
         <!-- Рандомайзер -->
@@ -510,8 +503,6 @@
             
             if (tabName === 'stats') {
                 loadStatsData();
-            } else if (tabName === 'inProgress') {
-                loadInProgressBooks();
             }
         }
 
@@ -646,41 +637,7 @@
             }
         }
 
-        // 2. КНИГИ В ПРОЦЕСІ
-        async function loadInProgressBooks() {
-            const inProgressBooks = document.getElementById('inProgressBooks');
-
-            try {
-                inProgressBooks.innerHTML = '<div class="loading">Завантаження...</div>';
-
-                const response = await fetch(API_URL + '/tracking');
-
-                if (!response.ok) {
-                    throw new Error('Помилка завантаження даних');
-                }
-
-                const data = await response.json();
-
-                // Книги зі статусом "В процесі"
-                const booksInProgress = data.results
-                    .filter(book => {
-                        const status = getPropertyValue(book.properties['Статус']);
-                        return status === 'В процесі';
-                    });
-
-                if (booksInProgress.length > 0) {
-                    inProgressBooks.innerHTML = booksInProgress.map(book => renderBookCard(book)).join('');
-                } else {
-                    inProgressBooks.innerHTML = '<div class="loading">Немає книг в процесі читання</div>';
-                }
-
-            } catch (error) {
-                console.error('Помилка:', error);
-                inProgressBooks.innerHTML = '<div class="error">❌ Помилка завантаження даних</div>';
-            }
-        }
-
-        // 3. РАНДОМАЙЗЕР
+        // 2. РАНДОМАЙЗЕР
         async function getRandomBooks() {
             const button = document.getElementById('randomizeBtn');
             const resultDiv = document.getElementById('randomBookResult');
@@ -744,7 +701,7 @@
             }
         }
 
-        // 4. ПОРАДНИК
+        // 3. ПОРАДНИК
         async function getRecommendation() {
             const button = document.getElementById('advisorBtn');
             const resultDiv = document.getElementById('recommendationResult');
@@ -796,24 +753,39 @@
 
                 if (recommendedBooks.length > 0) {
                     resultDiv.innerHTML = `
-                        <div class="books-grid">
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
                             ${recommendedBooks.map((book, index) => `
-                                <a href="${book.url}" target="_blank" class="book-card-link">
-                                    <div class="book-card">
-                                        ${book.coverUrl ? 
-                                            `<img src="${book.coverUrl}" alt="${book.title}" class="book-cover">` :
-                                            `<div class="book-cover" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 3em;">📚</div>`
-                                        }
-                                        <div class="book-info">
-                                            <div class="book-title">${book.title}</div>
-                                            <div class="book-author">${book.author}</div>
-                                            ${explanations[index] ? 
-                                                `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0; color: #555; font-size: 0.9em; line-height: 1.5;">
-                                                    ${explanations[index]}
-                                                </div>` 
-                                                : ''
+                                <a href="${book.url}" target="_blank" style="text-decoration: none; color: inherit;">
+                                    <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;" 
+                                         onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)';"
+                                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';">
+                                        
+                                        <div style="display: flex; gap: 20px; margin-bottom: 16px;">
+                                            ${book.coverUrl ? 
+                                                `<img src="${book.coverUrl}" alt="${book.title}" style="width: 120px; height: 160px; object-fit: cover; border-radius: 8px; flex-shrink: 0;">` :
+                                                `<div style="width: 120px; height: 160px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 3em; flex-shrink: 0;">📚</div>`
                                             }
+                                            <div style="flex: 1;">
+                                                <h3 style="font-size: 1.5em; font-weight: bold; color: #1a1a1a; margin: 0 0 8px 0; line-height: 1.3;">
+                                                    ${book.title}
+                                                </h3>
+                                                <p style="font-size: 1em; color: #666; margin: 0;">
+                                                    ${book.author}
+                                                </p>
+                                            </div>
                                         </div>
+                                        
+                                        ${explanations[index] ? 
+                                            `<div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 16px; border-radius: 8px;">
+                                                <div style="font-weight: 600; color: #059669; margin-bottom: 8px; font-size: 0.95em; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                    Чому це тобі підійде
+                                                </div>
+                                                <div style="color: #1a1a1a; line-height: 1.6; font-size: 0.95em;">
+                                                    ${explanations[index]}
+                                                </div>
+                                            </div>` 
+                                            : ''
+                                        }
                                     </div>
                                 </a>
                             `).join('')}
