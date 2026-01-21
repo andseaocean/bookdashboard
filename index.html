@@ -269,6 +269,9 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s, box-shadow 0.3s;
             cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         .book-card:hover {
@@ -286,6 +289,9 @@
 
         .book-info {
             padding: 15px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         .book-title {
@@ -487,7 +493,7 @@
 
     <script>
         // ВАЖЛИВО: Замініть це на URL вашого Cloudflare Worker!
-        const API_URL = 'https://bookdashboard.meereundozeane.workers.dev/';
+        const API_URL = 'https://bookdashboard.meereundozeane.workers.dev';
 
         // Перемикання вкладок
         function switchTab(tabName) {
@@ -768,53 +774,56 @@
 
                 const data = await response.json();
 
-                // Парсимо відповідь Claude
-                const recommendation = data.recommendation;
-                
-                // Розбиваємо рекомендації на окремі книги з поясненнями
-                const bookSections = recommendation.split(/\d+\.\s+/g).filter(s => s.trim());
-                
                 // Беремо тільки перші 3 книги
                 const recommendedBooks = data.books.slice(0, 3);
+                
+                // Витягуємо пояснення з тексту рекомендації
+                const explanations = [];
+                const recommendation = data.recommendation;
+                
+                // Розбиваємо на секції (1. ... 2. ... 3. ...)
+                const sections = recommendation.split(/\n?\d+\.\s+/).filter(s => s.trim());
+                
+                // Для кожної секції витягуємо пояснення (все після першого рядка)
+                sections.forEach(section => {
+                    const lines = section.split('\n').filter(l => l.trim());
+                    // Пропускаємо перший рядок (назва), беремо решту
+                    const explanation = lines.slice(1).join(' ').trim();
+                    if (explanation) {
+                        explanations.push(explanation);
+                    }
+                });
 
                 if (recommendedBooks.length > 0) {
                     resultDiv.innerHTML = `
                         <div class="books-grid">
-                            ${recommendedBooks.map((book, index) => {
-                                // Знаходимо пояснення для цієї книги
-                                let explanation = '';
-                                if (bookSections[index]) {
-                                    // Витягуємо пояснення (все після назви книги)
-                                    const section = bookSections[index];
-                                    const lines = section.split('\n').filter(l => l.trim());
-                                    // Беремо все окрім першого рядка (це назва)
-                                    explanation = lines.slice(1).join(' ').trim();
-                                }
-
-                                return `
-                                    <a href="${book.url}" target="_blank" class="book-card-link">
-                                        <div class="book-card">
-                                            ${book.coverUrl ? 
-                                                `<img src="${book.coverUrl}" alt="${book.title}" class="book-cover">` :
-                                                `<div class="book-cover" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 3em;">📚</div>`
+                            ${recommendedBooks.map((book, index) => `
+                                <a href="${book.url}" target="_blank" class="book-card-link">
+                                    <div class="book-card">
+                                        ${book.coverUrl ? 
+                                            `<img src="${book.coverUrl}" alt="${book.title}" class="book-cover">` :
+                                            `<div class="book-cover" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 3em;">📚</div>`
+                                        }
+                                        <div class="book-info">
+                                            <div class="book-title">${book.title}</div>
+                                            <div class="book-author">${book.author}</div>
+                                            ${explanations[index] ? 
+                                                `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0; color: #555; font-size: 0.9em; line-height: 1.5;">
+                                                    ${explanations[index]}
+                                                </div>` 
+                                                : ''
                                             }
-                                            <div class="book-info">
-                                                <div class="book-title">${book.title}</div>
-                                                <div class="book-author">${book.author}</div>
-                                                ${explanation ? `<div style="margin-top: 10px; color: #666; font-size: 0.9em; line-height: 1.4;">${explanation}</div>` : ''}
-                                            </div>
                                         </div>
-                                    </a>
-                                `;
-                            }).join('')}
+                                    </div>
+                                </a>
+                            `).join('')}
                         </div>
                     `;
                 } else {
                     resultDiv.innerHTML = `
                         <div class="recommendation-box">
-                            ${recommendation.replace(/\n/g, '<br>')}
+                            На жаль, не вдалося знайти відповідні книги в твоїй базі. Спробуй інший запит або перевір, чи є книги зі статусом "Далекі плани".
                         </div>
-                        <p style="text-align: center; color: #666; margin-top: 20px;">На жаль, не вдалося знайти точні картки рекомендованих книг у твоїй базі.</p>
                     `;
                 }
 
